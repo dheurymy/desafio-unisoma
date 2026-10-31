@@ -11,8 +11,10 @@ from typing import Literal
 import pandas as pd
 
 
+# Define os estados possíveis do resultado do tratamento.
 Status = Literal["OK", "ERRO"]
 
+# Define as colunas, recursos e valores aceitos nas planilhas.
 COLUNAS_ALUNOS = {"Nome", "Sexo", "Disponibilidade"}
 COLUNAS_TURMAS = {"Recursos", "Quantidade"}
 RECURSOS_OBRIGATORIOS = {
@@ -22,9 +24,13 @@ RECURSOS_OBRIGATORIOS = {
     "vagas_tarde",
 }
 SEXOS_VALIDOS = {"m", "f"}
-DISPONIBILIDADES_VALIDAS = {"manhã", "tarde"}
+DISPONIBILIDADES_VALIDAS = {"manha", "tarde"}
+
+# Controla a gravação temporária dos DataFrames para conferência manual.
+SALVAR_DATAFRAMES_DEBUG = False
 
 
+# Armazena os dados tratados, mensagens e inconsistências encontradas.
 @dataclass
 class ResultadoTratamento:
     """Resultado da leitura e validação de uma instância."""
@@ -36,6 +42,7 @@ class ResultadoTratamento:
     turmas: pd.DataFrame | None = None
     erros_iniciais: list[str] | None = None
     correcoes: list[str] | None = None
+    inconsistencias: pd.DataFrame | None = None
 
 
 CORRECOES_SEXO = {
@@ -63,11 +70,13 @@ CORRECOES_DISPONIBILIDADE = {
 }
 
 
+# Converte um valor para texto e remove espaços nas extremidades.
 def _texto(valor: object) -> str:
     """Converte um valor para texto sem considerar espaços nas extremidades."""
     return str(valor).strip()
 
 
+# Normaliza texto para comparações sem diferença de maiúsculas ou acentos.
 def _chave_texto(valor: object) -> str:
     """Gera uma chave para comparar maiúsculas e acentos de forma segura."""
     texto = unicodedata.normalize("NFKD", _texto(valor))
@@ -75,7 +84,10 @@ def _chave_texto(valor: object) -> str:
     return sem_acento.casefold()
 
 
-def revisar_colunas(alunos: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
+# Corrige os nomes das três primeiras colunas conforme suas posições esperadas.
+def revisar_colunas(
+    alunos: pd.DataFrame,
+) -> tuple[pd.DataFrame, list[dict[str, object]]]:
     """Corrige títulos usando a posição fixa das três colunas de alunos."""
     nomes_esperados = ["Nome", "Sexo", "Disponibilidade"]
     if len(alunos.columns) < len(nomes_esperados):
@@ -83,14 +95,20 @@ def revisar_colunas(alunos: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
 
     alunos_corrigidos = alunos.copy()
     colunas = list(alunos_corrigidos.columns)
-    correcoes: list[str] = []
+    correcoes: list[dict[str, object]] = []
 
     for posicao, nome_esperado in enumerate(nomes_esperados):
         nome_atual = _texto(colunas[posicao])
         if nome_atual != nome_esperado:
             correcoes.append(
-                f"Cabeçalho da coluna {posicao + 1}: "
-                f"'{nome_atual}' -> '{nome_esperado}'"
+                {
+                    "Linha": "-",
+                    "Coluna": nome_esperado,
+                    "Tipo de erro": "Cabeçalho corrigido automaticamente",
+                    "Detalhes": (
+                        f"'{nome_atual}' -> '{nome_esperado}'"
+                    ),
+                }
             )
             colunas[posicao] = nome_esperado
 
@@ -98,10 +116,13 @@ def revisar_colunas(alunos: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
     return alunos_corrigidos, correcoes
 
 
-def revisar_textos(alunos: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
+# Corrige automaticamente valores textuais conhecidos em sexo e disponibilidade.
+def revisar_textos(
+    alunos: pd.DataFrame,
+) -> tuple[pd.DataFrame, list[dict[str, object]]]:
     """Corrige somente equivalências textuais conhecidas nas colunas permitidas."""
     alunos_corrigidos = alunos.copy()
-    correcoes: list[str] = []
+    correcoes: list[dict[str, object]] = []
 
     for coluna, mapa in (
         ("Sexo", CORRECOES_SEXO),
@@ -122,13 +143,139 @@ def revisar_textos(alunos: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
 
             alunos_corrigidos.at[indice, coluna] = corrigido
             correcoes.append(
-                f"Alunos, linha {posicao + 2}, coluna {coluna}: "
-                f"'{original}' -> '{corrigido}'"
+                {
+                    "Linha": posicao + 2,
+                    "Coluna": coluna,
+                    "Tipo de erro": "Valor corrigido automaticamente",
+                    "Detalhes": f"'{original}' -> '{corrigido}'",
+                }
             )
 
     return alunos_corrigidos, correcoes
 
 
+# Separa linhas inválidas e registra os motivos para removê-las.
+def separar_inconsistencias(
+    alunos: pd.DataFrame,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Remove linhas inválidas e registra cada inconsistência encontrada."""
+    registros: list[dict[str, object]] = []
+    indices_validos: list[object] = []
+
+    for posicao, indice in enumerate(alunos.index):
+        linha = alunos.loc[indice]
+        erros_linha: list[tuple[str, str]] = []
+
+        nome = linha.get("Nome")
+        if pd.isna(nome) or _texto(nome) == "":
+            erros_linha.append(("Nome", "Valor Ausente na Coluna Nome"))
+        elif not isinstance(nome, str):
+            erros_linha.append(("Nome", "Tipo Inválido na Coluna Nome"))
+
+        sexo = linha.get("Sexo")
+        if pd.isna(sexo) or _texto(sexo) == "":
+            erros_linha.append(("Sexo", "Valor Ausente na Coluna Sexo"))
+        elif _chave_texto(sexo) not in SEXOS_VALIDOS:
+            erros_linha.append(("Sexo", "Valor Inválido na Coluna Sexo"))
+
+        disponibilidade = linha.get("Disponibilidade")
+        if pd.isna(disponibilidade) or _texto(disponibilidade) == "":
+            erros_linha.append(
+                (
+                    "Disponibilidade",
+                    "Valor Ausente na Coluna Disponibilidade",
+                )
+            )
+        elif _chave_texto(disponibilidade) not in DISPONIBILIDADES_VALIDAS:
+            erros_linha.append(
+                (
+                    "Disponibilidade",
+                    "Valor Inválido na Coluna Disponibilidade",
+                )
+            )
+
+        if erros_linha:
+            for coluna, tipo in erros_linha:
+                registros.append(
+                    {
+                        "Linha": posicao + 2,
+                        "Coluna": coluna,
+                        "Tipo de erro": tipo,
+                        "Detalhes": "Registro descartado do DataFrame de alunos",
+                    }
+                )
+        else:
+            indices_validos.append(indice)
+
+    alunos_validos = alunos.loc[indices_validos].reset_index(drop=True)
+    inconsistencias = pd.DataFrame(
+        registros,
+        columns=["Linha", "Coluna", "Tipo de erro", "Detalhes"],
+    )
+    return alunos_validos, inconsistencias
+
+
+# Identifica nomes repetidos no mesmo turno sem remover os alunos.
+def identificar_duplicidades(alunos: pd.DataFrame) -> pd.DataFrame:
+    """Registra nomes repetidos quando a disponibilidade também é igual."""
+    registros: list[dict[str, object]] = []
+    chaves = pd.DataFrame(
+        {
+            "nome": alunos["Nome"].map(_chave_texto),
+            "disponibilidade": alunos["Disponibilidade"].map(_chave_texto),
+        },
+        index=alunos.index,
+    )
+    quantidade_por_grupo = chaves.groupby(
+        ["nome", "disponibilidade"]
+    )["nome"].transform("size")
+
+    for posicao, indice in enumerate(alunos.index):
+        if quantidade_por_grupo.loc[indice] <= 1:
+            continue
+
+        nome = _texto(alunos.at[indice, "Nome"])
+        disponibilidade = _texto(alunos.at[indice, "Disponibilidade"])
+        registros.append(
+            {
+                "Linha": posicao + 2,
+                "Coluna": "Nome",
+                "Tipo de erro": "Aluno duplicado no mesmo turno",
+                "Detalhes": (
+                    f"'{nome}' aparece mais de uma vez no turno "
+                    f"'{disponibilidade}'"
+                ),
+            }
+        )
+
+    return pd.DataFrame(
+        registros,
+        columns=["Linha", "Coluna", "Tipo de erro", "Detalhes"],
+    )
+
+
+# Salva cópias CSV dos DataFrames para inspeção durante o desenvolvimento.
+def salvar_dataframes_debug(
+    alunos: pd.DataFrame,
+    inconsistencias: pd.DataFrame,
+) -> None:
+    """Salva cópias CSV dos DataFrames para conferência manual."""
+    pasta_debug = Path(__file__).resolve().parents[1] / "dados" / "debug"
+    pasta_debug.mkdir(parents=True, exist_ok=True)
+    alunos.to_csv(
+        pasta_debug / "alunos_tratados.csv",
+        index=False,
+        encoding="utf-8-sig",
+    )
+    inconsistencias.to_csv(
+        pasta_debug / "inconsistencias.csv",
+        index=False,
+        encoding="utf-8-sig",
+    )
+    print(f"DataFrames de debug salvos em: {pasta_debug}")
+
+
+# Valida colunas, preenchimento e valores da planilha de alunos.
 def _validar_alunos(alunos: pd.DataFrame) -> list[str]:
     erros: list[str] = []
     colunas_ausentes = COLUNAS_ALUNOS - set(alunos.columns)
@@ -174,9 +321,7 @@ def _validar_alunos(alunos: pd.DataFrame) -> list[str]:
     if sexos_invalidos:
         erros.append("VALOR_SEXO_INVALIDO: " + ", ".join(sexos_invalidos))
 
-    disponibilidades = (
-        alunos["Disponibilidade"].dropna().map(_texto).str.casefold()
-    )
+    disponibilidades = alunos["Disponibilidade"].dropna().map(_chave_texto)
     disponibilidades_invalidas = sorted(
         set(disponibilidades) - DISPONIBILIDADES_VALIDAS
     )
@@ -189,6 +334,7 @@ def _validar_alunos(alunos: pd.DataFrame) -> list[str]:
     return erros
 
 
+# Valida recursos, quantidades e configurações das turmas.
 def _validar_turmas(turmas: pd.DataFrame) -> list[str]:
     erros: list[str] = []
     colunas_ausentes = COLUNAS_TURMAS - set(turmas.columns)
@@ -238,6 +384,7 @@ def _validar_turmas(turmas: pd.DataFrame) -> list[str]:
     return erros
 
 
+# Verifica se há vagas suficientes para os alunos de cada turno.
 def _validar_capacidade(
     alunos: pd.DataFrame, turmas: pd.DataFrame
 ) -> list[str]:
@@ -249,7 +396,8 @@ def _validar_capacidade(
     valores = turmas.set_index("Recursos")["Quantidade"]
     for periodo, nome_periodo in (("manhã", "manha"), ("tarde", "tarde")):
         quantidade_alunos = (
-            alunos["Disponibilidade"].map(_texto).str.casefold() == periodo
+            alunos["Disponibilidade"].map(_chave_texto)
+            == _chave_texto(periodo)
         ).sum()
         capacidade = int(valores[f"turmas_{nome_periodo}"]) * int(
             valores[f"vagas_{nome_periodo}"]
@@ -264,6 +412,7 @@ def _validar_capacidade(
     return erros
 
 
+# Reúne todas as validações aplicáveis à instância carregada.
 def validar_dados(
     alunos: pd.DataFrame, turmas: pd.DataFrame
 ) -> list[str]:
@@ -274,6 +423,7 @@ def validar_dados(
     return erros
 
 
+# Coordena leitura, correções, filtragem, validação e retorno dos DataFrames.
 def processar_excel(caminho_arquivo: str | Path) -> ResultadoTratamento:
     """Lê, valida e informa o resultado de uma instância Excel."""
     caminho = Path(caminho_arquivo)
@@ -283,6 +433,7 @@ def processar_excel(caminho_arquivo: str | Path) -> ResultadoTratamento:
         print(f"ERRO: {mensagem}")
         return ResultadoTratamento("ERRO", mensagem, [mensagem])
 
+    # Carrega todas as abas do arquivo Excel.
     try:
         planilhas = pd.read_excel(caminho, sheet_name=None)
     except (OSError, ValueError) as exc:
@@ -290,6 +441,7 @@ def processar_excel(caminho_arquivo: str | Path) -> ResultadoTratamento:
         print(f"ERRO: {mensagem}")
         return ResultadoTratamento("ERRO", mensagem, [mensagem])
 
+    # Confere se as abas essenciais existem.
     erros: list[str] = []
     abas_obrigatorias = {"Alunos", "Turmas"}
     abas_ausentes = abas_obrigatorias - set(planilhas)
@@ -300,13 +452,73 @@ def processar_excel(caminho_arquivo: str | Path) -> ResultadoTratamento:
     turmas = planilhas.get("Turmas")
     erros_iniciais = list(erros)
     correcoes: list[str] = []
+    inconsistencias = pd.DataFrame(
+        columns=["Linha", "Coluna", "Tipo de erro", "Detalhes"]
+    )
     if alunos is not None and turmas is not None:
+        # Registra os problemas encontrados antes de qualquer correção.
         erros_iniciais.extend(validar_dados(alunos, turmas))
+
+        # Corrige cabeçalhos e valores textuais previamente conhecidos.
         alunos, correcoes_colunas = revisar_colunas(alunos)
         alunos, correcoes_textos = revisar_textos(alunos)
-        correcoes = correcoes_colunas + correcoes_textos
-        erros = list(erros) + validar_dados(alunos, turmas)
+        correcoes_registros = correcoes_colunas + correcoes_textos
+        correcoes = [
+            f"Linha {registro['Linha']}, coluna {registro['Coluna']}: "
+            f"{registro['Detalhes']}"
+            for registro in correcoes_registros
+        ]
+        if correcoes_registros:
+            inconsistencias = pd.DataFrame(
+                correcoes_registros,
+                columns=["Linha", "Coluna", "Tipo de erro", "Detalhes"],
+            )
 
+        # Remove linhas inválidas e reúne as inconsistências informativas.
+        if COLUNAS_ALUNOS.issubset(alunos.columns):
+            alunos, inconsistencias_alunos = separar_inconsistencias(alunos)
+            duplicidades = identificar_duplicidades(alunos)
+            inconsistencias = pd.concat(
+                [inconsistencias, inconsistencias_alunos, duplicidades],
+                ignore_index=True,
+            )
+            if not duplicidades.empty:
+                quantidade_duplicidades = len(duplicidades)
+                erros_iniciais.append(
+                    f"{quantidade_duplicidades} aluno(s) duplicado(s) "
+                    "encontrado(s) no mesmo turno;"
+                )
+
+        # DEBUG: remover este bloco quando não precisar mais conferir os DataFrames.
+        if SALVAR_DATAFRAMES_DEBUG:
+            salvar_dataframes_debug(alunos, inconsistencias)
+
+        # Valida novamente os dados depois das correções e remoções.
+        erros = list(erros) + validar_dados(alunos, turmas)
+        print(f"DataFrame de alunos válidos: {len(alunos)} linha(s)")
+        print(
+            "DataFrame de inconsistências: "
+            f"{len(inconsistencias)} linha(s)"
+        )
+
+        if erros:
+            registros_globais = pd.DataFrame(
+                [
+                    {
+                        "Linha": "-",
+                        "Coluna": "-",
+                        "Tipo de erro": erro,
+                        "Detalhes": "Erro geral da instância",
+                    }
+                    for erro in erros
+                ],
+                columns=["Linha", "Coluna", "Tipo de erro", "Detalhes"],
+            )
+            inconsistencias = pd.concat(
+                [inconsistencias, registros_globais], ignore_index=True
+            )
+
+    # Exibe o diagnóstico inicial e as correções realizadas.
     print("ERROS INICIAIS:")
     if erros_iniciais:
         for erro in erros_iniciais:
@@ -321,6 +533,7 @@ def processar_excel(caminho_arquivo: str | Path) -> ResultadoTratamento:
     else:
         print("- nenhuma")
 
+    # Interrompe o fluxo se ainda houver erros bloqueantes.
     if erros:
         mensagem = "Dados inválidos após a revisão textual."
         print("ERROS FINAIS:")
@@ -334,15 +547,28 @@ def processar_excel(caminho_arquivo: str | Path) -> ResultadoTratamento:
             turmas,
             erros_iniciais,
             correcoes,
+            inconsistencias,
         )
 
-    mensagem = "OK: dados prontos para a modelagem."
+    # Retorna os DataFrames quando os dados estão prontos para a modelagem.
+    mensagem = (
+        "OK: dados prontos para a modelagem. "
+        f"{len(inconsistencias)} inconsistência(s) registrada(s)."
+    )
     print(mensagem)
     return ResultadoTratamento(
-        "OK", mensagem, [], alunos, turmas, erros_iniciais, correcoes
+        "OK",
+        mensagem,
+        [],
+        alunos,
+        turmas,
+        erros_iniciais,
+        correcoes,
+        inconsistencias,
     )
 
 
+# Permite executar o tratamento diretamente pelo terminal.
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Valida os dados de uma instância Excel."
