@@ -27,7 +27,7 @@ SEXOS_VALIDOS = {"m", "f"}
 DISPONIBILIDADES_VALIDAS = {"manha", "tarde"}
 
 # Controla a gravação temporária dos DataFrames para conferência manual.
-SALVAR_DATAFRAMES_DEBUG = False
+SALVAR_DATAFRAMES_DEBUG = True
 
 
 # Armazena os dados tratados, mensagens e inconsistências encontradas.
@@ -162,7 +162,7 @@ def separar_inconsistencias(
     registros: list[dict[str, object]] = []
     indices_validos: list[object] = []
 
-    for posicao, indice in enumerate(alunos.index):
+    for indice in alunos.index:
         linha = alunos.loc[indice]
         erros_linha: list[tuple[str, str]] = []
 
@@ -198,7 +198,7 @@ def separar_inconsistencias(
             for coluna, tipo in erros_linha:
                 registros.append(
                     {
-                        "Linha": posicao + 2,
+                        "Linha": int(indice) + 2,
                         "Coluna": coluna,
                         "Tipo de erro": tipo,
                         "Detalhes": "Registro descartado do DataFrame de alunos",
@@ -207,7 +207,7 @@ def separar_inconsistencias(
         else:
             indices_validos.append(indice)
 
-    alunos_validos = alunos.loc[indices_validos].reset_index(drop=True)
+    alunos_validos = alunos.loc[indices_validos]
     inconsistencias = pd.DataFrame(
         registros,
         columns=["Linha", "Coluna", "Tipo de erro", "Detalhes"],
@@ -230,7 +230,7 @@ def identificar_duplicidades(alunos: pd.DataFrame) -> pd.DataFrame:
         ["nome", "disponibilidade"]
     )["nome"].transform("size")
 
-    for posicao, indice in enumerate(alunos.index):
+    for indice in alunos.index:
         if quantidade_por_grupo.loc[indice] <= 1:
             continue
 
@@ -238,7 +238,7 @@ def identificar_duplicidades(alunos: pd.DataFrame) -> pd.DataFrame:
         disponibilidade = _texto(alunos.at[indice, "Disponibilidade"])
         registros.append(
             {
-                "Linha": posicao + 2,
+                "Linha": int(indice) + 2,
                 "Coluna": "Nome",
                 "Tipo de erro": "Aluno duplicado no mesmo turno",
                 "Detalhes": (
