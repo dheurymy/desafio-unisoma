@@ -9,4 +9,4 @@ window = webview.create_window(
     js_api=api
 )
 
-webview.start(debug=True)
+webview.start(debug=False)

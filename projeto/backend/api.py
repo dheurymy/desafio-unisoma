@@ -1,15 +1,13 @@
-import time
+import os
+import subprocess
+import sys
 from tkinter import filedialog
 import tkinter as tk
 
+from .ensalamento import executar_ensalamento
+
 
 class Api:
-
-    # --- MODO DE TESTE DO FRONT END -------------------------------------
-    # Troque para True para simular um ensalamento impossível (mais alunos
-    # do que vagas) e ver o estado de erro da tela (passo 2).
-    SIMULAR_FALHA_ENSALAMENTO = True
-    # ---------------------------------------------------------------------
 
     def __init__(self):
         self.caminho = None
@@ -34,43 +32,17 @@ class Api:
 
         return arquivo
 
-    # ------------------------------------------------------------------
-    # Métodos simulados: só devolvem dados fixos no formato que o front
-    # espera. Nenhuma leitura de Excel nem modelo de otimização aqui.
-    # ------------------------------------------------------------------
-
     def executar(self):
-
-        time.sleep(2)  # simula processamento
-
-        inconsistencias = [
-            "Linha 5: 'manha' corrigido para 'Manhã'",
-            "Linha 6: sexo inválido 'x' (Caio de Andrade da Costa)",
-            "Nome duplicado: 'Lara Dias Ferreira Rodrigues' (2 ocorrências)",
-        ]
-
-        if self.SIMULAR_FALHA_ENSALAMENTO:
-            return {
-                "ok": False,
-                "mensagem": "Turno Manhã: 80 alunos para 70 vagas",
-                "inconsistencias": inconsistencias,
-                "turmas": [],
-                "arquivo_gerado": True,  # abas Inconsistências gravadas mesmo assim
-            }
-
-        return {
-            "ok": True,
-            "mensagem": "70 alunos alocados em 4 turmas",
-            "inconsistencias": inconsistencias,
-            "turmas": [
-                {"turma": "MANHÃ - A", "total": 18, "m": 9, "f": 9},
-                {"turma": "MANHÃ - B", "total": 17, "m": 8, "f": 9},
-                {"turma": "TARDE - C", "total": 18, "m": 10, "f": 8},
-                {"turma": "TARDE - D", "total": 17, "m": 9, "f": 8},
-            ],
-        }
+        # tratamento -> modelagem -> grava abas no Excel -> resposta p/ o front
+        return executar_ensalamento(self.caminho)
 
     def abrir_resultado(self):
+        if not self.caminho or not os.path.isfile(self.caminho):
+            raise FileNotFoundError("Planilha de resultado não encontrada.")
 
-        # Futuramente: os.startfile(caminho_do_xlsx)
-        print("abrir_resultado chamado (simulado)")
+        if hasattr(os, "startfile"):  # Windows
+            os.startfile(self.caminho)
+        else:  # só para testes fora do Windows
+            subprocess.Popen(
+                ["open" if sys.platform == "darwin" else "xdg-open", self.caminho]
+            )
