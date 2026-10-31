@@ -1,0 +1,303 @@
+:root {
+    --azul: #2c3e9b;
+    --azul-escuro: #1f2d75;
+    --turquesa: #2fb59f;
+    --verde: #86c440;
+    --erro: #c8323c;
+    --texto: #1f2937;
+    --texto-suave: #5b6675;
+    --fundo: #f2f5f7;
+    --superficie: #ffffff;
+    --linha: #dfe5ea;
+    --fonte: "Poppins", "Segoe UI", Arial, sans-serif;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background: var(--fundo);
+    color: var(--texto);
+    font-family: var(--fonte);
+}
+
+.container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 28px 24px 40px;
+}
+
+/* Cabeçalho */
+
+.header {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    background: var(--superficie);
+    border-radius: 12px;
+    padding: 18px 24px;
+    margin-bottom: 24px;
+    border-bottom: 4px solid var(--turquesa);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, .08);
+}
+
+.logo {
+    height: 56px;
+    width: auto;
+}
+
+.header-texto h1 {
+    margin: 0;
+    font-size: 1.35rem;
+    color: var(--azul);
+}
+
+.header-texto p {
+    margin: 2px 0 0;
+    color: var(--texto-suave);
+    font-size: .9rem;
+}
+
+/* Passos */
+
+.passos {
+    list-style: none;
+    margin: 0 0 24px;
+    padding: 0;
+    position: relative;
+}
+
+/* linha que liga os passos */
+.passos::before {
+    content: "";
+    position: absolute;
+    left: 41px;
+    top: 30px;
+    bottom: 30px;
+    width: 2px;
+    background: var(--linha);
+}
+
+.passo {
+    position: relative;
+    display: grid;
+    grid-template-columns: 44px minmax(200px, 1fr) 190px minmax(180px, 240px);
+    align-items: center;
+    gap: 16px;
+    background: var(--superficie);
+    border: 1px solid var(--linha);
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 12px;
+    transition: opacity .2s;
+}
+
+.passo-num {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--superficie);
+    border: 2px solid var(--linha);
+    color: var(--texto-suave);
+    font-weight: 600;
+    z-index: 1;
+}
+
+.passo-texto h2 {
+    margin: 0 0 2px;
+    font-size: 1.02rem;
+}
+
+.passo-texto p {
+    margin: 0;
+    color: var(--texto-suave);
+    font-size: .88rem;
+    line-height: 1.4;
+}
+
+.status {
+    font-size: .88rem;
+    color: var(--texto-suave);
+    overflow-wrap: anywhere;
+}
+
+/* Estados */
+
+.passo[data-estado="bloqueado"] {
+    opacity: .55;
+}
+
+.passo[data-estado="ativo"] {
+    border-color: var(--azul);
+}
+
+.passo[data-estado="ativo"] .passo-num {
+    border-color: var(--azul);
+    color: var(--azul);
+}
+
+.passo[data-estado="rodando"] .passo-num {
+    border-color: var(--azul);
+    border-top-color: transparent;
+    color: transparent;
+    animation: girar 0.9s linear infinite;
+}
+
+.passo[data-estado="ok"] .passo-num {
+    background: var(--turquesa);
+    border-color: var(--turquesa);
+    color: #fff;
+}
+
+.passo[data-estado="ok"] .status {
+    color: #1c7f6e;
+    font-weight: 500;
+}
+
+.passo[data-estado="erro"] {
+    border-color: var(--erro);
+}
+
+.passo[data-estado="erro"] .passo-num {
+    background: var(--erro);
+    border-color: var(--erro);
+    color: #fff;
+}
+
+.passo[data-estado="erro"] .status {
+    color: var(--erro);
+    font-weight: 500;
+}
+
+@keyframes girar {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Botões */
+
+button {
+    font-family: inherit;
+    font-size: .92rem;
+    font-weight: 500;
+    background: var(--azul);
+    color: #fff;
+    border: none;
+    padding: 12px 18px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+    background: var(--azul-escuro);
+}
+
+button:disabled {
+    background: #c3cad3;
+    cursor: not-allowed;
+}
+
+button:focus-visible {
+    outline: 3px solid var(--turquesa);
+    outline-offset: 2px;
+}
+
+/* Painéis: resumo e log */
+
+.painel {
+    background: var(--superficie);
+    border: 1px solid var(--linha);
+    border-radius: 12px;
+    padding: 18px 20px;
+    margin-bottom: 16px;
+}
+
+.painel h2 {
+    margin: 0 0 12px;
+    font-size: 1rem;
+}
+
+.tabela-scroll {
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .92rem;
+}
+
+th,
+td {
+    text-align: left;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--linha);
+}
+
+th {
+    color: var(--texto-suave);
+    font-weight: 500;
+}
+
+.painel-log {
+    background: #1d2433;
+    border-color: #1d2433;
+    color: #e6eaf2;
+}
+
+.painel-log h2 {
+    color: #fff;
+}
+
+#logs {
+    max-height: 240px;
+    overflow-y: auto;
+    font-family: Consolas, "Courier New", monospace;
+    font-size: .84rem;
+    line-height: 1.6;
+}
+
+.log-hora {
+    color: #8a94a8;
+    margin-right: 8px;
+}
+
+.log-erro {
+    color: #ff8a90;
+}
+
+.log-aviso {
+    color: #ffd27a;
+}
+
+.log-ok {
+    color: #7fe0c9;
+}
+
+/* Telas menores */
+
+@media (max-width: 820px) {
+    .passo {
+        grid-template-columns: 44px 1fr;
+    }
+
+    .passo button,
+    .passo .status {
+        grid-column: 2;
+    }
+
+    .passos::before {
+        display: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .passo[data-estado="rodando"] .passo-num {
+        animation: none;
+    }
+}

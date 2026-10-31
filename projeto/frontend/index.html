@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ABC Aprendiz · Ensalamento</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <main class="container">
+
+        <header class="header">
+            <img src="assets/logo_abc.png" alt="Logo ABC Aprendiz" class="logo">
+            <div class="header-texto">
+                <h1>Sistema Inteligente de Ensalamento</h1>
+              
+            </div>
+        </header>
+
+        <ol class="passos">
+
+            <li class="passo" id="passo1" data-estado="ativo">
+                <span class="passo-num">1</span>
+                <div class="passo-texto">
+                    <h2>Planilha de entrada</h2>
+                    <p>Escolha o Excel com as abas Alunos e Turmas.</p>
+                </div>
+                <button id="btnPlanilha">Selecionar planilha</button>
+                <span class="status" id="arquivoSelecionado">Nenhum arquivo selecionado</span>
+            </li>
+
+            <li class="passo" id="passo2" data-estado="bloqueado">
+                <span class="passo-num">2</span>
+                <div class="passo-texto">
+                    <h2>Gerar turmas</h2>
+                    <p>Distribui os alunos por turno, equilibrando quantidade e gênero. Problemas de cadastro vão para a
+                        aba Inconsistências.</p>
+                </div>
+                <button id="btnExecutar" disabled>Gerar turmas</button>
+                <span class="status" id="statusProcessamento">Aguardando planilha</span>
+            </li>
+
+            <li class="passo" id="passo3" data-estado="bloqueado">
+                <span class="passo-num">3</span>
+                <div class="passo-texto">
+                    <h2>Resultado</h2>
+                    <p>Abre o Excel com as abas Ensalamento e Inconsistências.</p>
+                </div>
+                <button id="btnResultado" disabled>Abrir resultado</button>
+                <span class="status" id="statusResultado">Ainda não gerado</span>
+            </li>
+
+        </ol>
+
+        <section class="painel" id="resumo" hidden>
+            <h2>Resumo da distribuição</h2>
+            <div class="tabela-scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Turma</th>
+                            <th>Alunos</th>
+                            <th>Meninos</th>
+                            <th>Meninas</th>
+                            <th>% meninas</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resumoCorpo"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="painel painel-log">
+            <h2>Registro da execução</h2>
+            <div id="logs" role="log" aria-live="polite"></div>
+        </section>
+
+    </main>
+
+    <script src="scripts.js"></script>
+</body>
+
+</html>
