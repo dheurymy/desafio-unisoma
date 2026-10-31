@@ -79,7 +79,8 @@ def criar_variaveis_alocacao(alunos, turmas):
 def adicionar_alocacao_unica(modelo, alunos, turmas, x):
 
     # Documentação da função:
-    # Cada aluno deve ser alocado em exatamente uma turma do seu turno.
+    # Cada aluno pode ser alocado em no máximo uma turma do seu turno.
+    # Caso não existam vagas, o aluno poderá permanecer sem alocação.
 
     # Cria um dicionário que separa as turmas por turno.
     # A chave será o nome do turno e o valor será a lista de turmas daquele turno.
@@ -114,7 +115,7 @@ def adicionar_alocacao_unica(modelo, alunos, turmas, x):
             # Isso garante que o aluno seja alocado em uma única turma.
             pulp.lpSum(
                 x[(aluno["id"], t["turma"])] for t in candidatas
-            ) == 1,
+            ) <= 1,
 
             # Define um nome exclusivo para identificar essa restrição.
             # O ID do aluno é utilizado para diferenciar cada restrição.

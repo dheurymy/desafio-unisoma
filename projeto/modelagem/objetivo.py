@@ -25,6 +25,76 @@ def objetivo_equilibrio_quantidade(menores, maiores):
     )
 
 
+def criar_desvios_selecao_genero(modelo, alunos, turmas, x):
+    """
+    Mede o desvio entre a proporção original de meninos
+    de cada turno e a proporção de meninos entre os alunos alocados.
+    """
+
+    desvios = []
+
+    for turno in ("Manhã", "Tarde"):
+
+        grupo_alunos = [
+            a for a in alunos if a["turno"] == turno
+        ]
+
+        if not grupo_alunos:
+            continue
+
+        total_alunos = len(grupo_alunos)
+
+        total_masculino = sum(
+            1 for a in grupo_alunos if a["sexo"] == "M"
+        )
+
+        total_selecionado = pulp.lpSum(
+            x[(a["id"], turma["turma"])]
+            for a in grupo_alunos
+            for turma in turmas
+            if turma["turno"] == turno
+            and (a["id"], turma["turma"]) in x
+        )
+
+        masculino_selecionado = pulp.lpSum(
+            x[(a["id"], turma["turma"])]
+            for a in grupo_alunos
+            if a["sexo"] == "M"
+            for turma in turmas
+            if turma["turno"] == turno
+            and (a["id"], turma["turma"]) in x
+        )
+
+        expressao = (
+            total_alunos * masculino_selecionado
+            - total_masculino * total_selecionado
+        )
+
+        nome_turno = "manha" if turno == "Manhã" else "tarde"
+
+        desvio = pulp.LpVariable(
+            f"desvio_selecao_genero_{nome_turno}",
+            lowBound=0
+        )
+
+        modelo += desvio >= expressao
+        modelo += desvio >= -expressao
+
+        desvios.append(desvio)
+
+    return desvios
+
+
+
+def objetivo_equilibrio_selecao_genero(desvios):
+    """
+    Minimiza o desvio da proporção de gênero
+    entre os alunos selecionados em cada turno.
+    """
+
+    return pulp.lpSum(desvios)
+
+
 def criar_desvios_de_genero(modelo, alunos, turmas, x):
     """
     Mede o desvio da proporção de meninos em cada turma em relação
@@ -74,7 +144,9 @@ def criar_desvios_de_genero(modelo, alunos, turmas, x):
             # Se x[(a["id"], turma["turma"])] for 1, o aluno pertence
             # à turma; se for 0, não pertence.
             quantidade = pulp.lpSum(
-                x[(a["id"], turma["turma"])] for a in grupo_alunos
+                x[(a["id"], turma["turma"])]
+                for a in grupo_alunos
+                if (a["id"], turma["turma"]) in x
             )
 
             # Calcula quantos meninos foram atribuídos à turma atual.
@@ -83,6 +155,7 @@ def criar_desvios_de_genero(modelo, alunos, turmas, x):
                 x[(a["id"], turma["turma"])]
                 for a in grupo_alunos
                 if a["sexo"] == "M"
+                and (a["id"], turma["turma"]) in x
             )
 
             # Calcula a diferença entre a proporção de meninos
