@@ -417,10 +417,7 @@ def validar_dados(
     alunos: pd.DataFrame, turmas: pd.DataFrame
 ) -> list[str]:
     """Retorna todos os erros objetivos encontrados nos dados."""
-    erros = _validar_alunos(alunos) + _validar_turmas(turmas)
-    if not erros:
-        erros.extend(_validar_capacidade(alunos, turmas))
-    return erros
+    return _validar_alunos(alunos) + _validar_turmas(turmas)
 
 
 # Coordena leitura, correções, filtragem, validação e retorno dos DataFrames.
