@@ -1,244 +1,198 @@
-# Manual de Instruções
+# Manual de Instruções de Uso
 
-## 1. Sobre o sistema
+## 1. Apresentação
 
-O sistema realiza o ensalamento de alunos em turmas a partir de uma planilha Excel.
+O sistema realiza a distribuição de alunos em turmas de acordo com as informações fornecidas em uma planilha Excel.
 
-O fluxo geral da aplicação é:
+Para utilizar o sistema, não é necessário clonar o projeto ou instalar programas de desenvolvimento. Basta ter acesso ao arquivo executável fornecido pela equipe.
 
-```text
-Carregamento da planilha
-        ↓
-Tratamento e validação dos dados
-        ↓
-Separação dos dados válidos e das inconsistências
-        ↓
-Execução do modelo matemático
-        ↓
-Exibição do resultado do ensalamento
-```
+## 2. Antes de começar
 
-O tratamento dos dados é realizado pelo arquivo `projeto/etl/tratamento.py`. A modelagem está concentrada na pasta `projeto/modelagem` e a aplicação é iniciada pelo arquivo `projeto/app.py`.
+Prepare uma planilha Excel no formato `.xlsx` contendo os dados dos alunos e das turmas.
 
-## 2. Requisitos
+A planilha deve conter, preferencialmente, as abas `Alunos` e `Turmas`. As abas `Ensalamento` e `Inconsistências` podem estar presentes em arquivos já utilizados pelo sistema, mas não são necessárias para o primeiro carregamento.
 
-Para executar o projeto pelo código-fonte, é necessário ter:
+## 3. Formato da aba Alunos
 
-- Python instalado;
-- acesso ao terminal;
-- as bibliotecas listadas em `projeto/requirements.txt`;
-- uma planilha Excel no formato `.xlsx`.
+A aba `Alunos` deve conter uma linha para cada aluno. As três primeiras colunas devem seguir esta ordem:
 
-Instale as dependências a partir da pasta do projeto:
-
-```bash
-pip install -r projeto/requirements.txt
-```
-
-## 3. Como iniciar a aplicação
-
-Na raiz do projeto, execute:
-
-```bash
-python projeto/app.py
-```
-
-Também existe uma versão compilada em `projeto/dist/EnsalamentoABC.exe`, quando essa versão estiver disponível para distribuição.
-
-## 4. Formato da planilha de entrada
-
-A planilha deve ser um arquivo Excel (`.xlsx`) com as abas utilizadas pelo sistema.
-
-### 4.1 Aba `Alunos`
-
-A aba deve conter os dados dos alunos. As três primeiras colunas devem representar:
-
-| Posição | Coluna esperada | Descrição |
+| Ordem | Coluna | Preenchimento esperado |
 |---|---|---|
-| 1 | `Nome` | Nome completo do aluno |
-| 2 | `Sexo` | Sexo do aluno, normalmente `M` ou `F` |
-| 3 | `Disponibilidade` | Turno disponível, normalmente `Manhã` ou `Tarde` |
+| 1 | Nome | Nome completo do aluno |
+| 2 | Sexo | `M` ou `F` |
+| 3 | Disponibilidade | `Manhã` ou `Tarde` |
 
-O tratamento considera a posição das três primeiras colunas para identificar casos em que o cabeçalho foi preenchido com um nome incorreto. Por exemplo, se a primeira coluna estiver nomeada de forma diferente, ela poderá ser reconhecida como a coluna `Nome` e a correção será registrada.
+Exemplo:
 
-### 4.2 Aba `Turmas`
+| Nome | Sexo | Disponibilidade |
+|---|---|---|
+| Ana Souza | F | Manhã |
+| João Lima | M | Tarde |
 
-A aba `Turmas` contém os recursos disponíveis para o ensalamento, como a quantidade de turmas e de vagas por turno.
+Evite deixar o nome do aluno vazio. Também confira se o sexo e a disponibilidade foram informados corretamente.
 
-Os nomes e a organização dos recursos devem seguir o padrão das instâncias de teste fornecidas em `documentacao/instancias`.
+## 4. Formato da aba Turmas
 
-### 4.3 Outras abas
+A aba `Turmas` deve informar os recursos disponíveis para o ensalamento, como a quantidade de turmas e a quantidade de vagas para cada turno.
 
-As instâncias de teste também podem conter abas como `Ensalamento` e `Inconsistências`. O tratamento atual lê as planilhas disponíveis no arquivo, mas não altera o Excel original.
+Utilize como referência as planilhas de exemplo fornecidas pela equipe. Não altere os nomes dos recursos nem a estrutura dessa aba sem orientação do responsável pelo sistema.
 
-## 5. Tratamento dos dados
+## 5. Como abrir o sistema
 
-O arquivo `projeto/etl/tratamento.py` executa as seguintes etapas:
+1. Localize o arquivo executável recebido da equipe.
+2. Clique duas vezes no arquivo `EnsalamentoABC.exe`.
+3. Aguarde a abertura da tela principal.
+4. Se o Windows exibir uma mensagem de segurança, confirme a abertura somente se o arquivo tiver sido recebido de uma fonte confiável.
 
-1. lê o arquivo Excel;
-2. localiza as abas de alunos e turmas;
-3. verifica as colunas necessárias;
-4. corrige alguns erros de escrita conhecidos;
-5. identifica valores ausentes ou inválidos;
-6. separa os alunos válidos dos registros inconsistentes;
-7. identifica alunos duplicados no mesmo turno;
-8. devolve os dados preparados para a modelagem.
+O programa não exige que o usuário abra o código-fonte ou utilize o terminal.
 
-O tratamento não realiza a distribuição dos alunos nas turmas. Essa decisão pertence ao modelo matemático.
+## 6. Como carregar uma planilha
 
-## 6. Correções automáticas
+1. Na tela inicial, escolha a opção para carregar ou selecionar uma planilha.
+2. Localize o arquivo `.xlsx` no computador.
+3. Selecione o arquivo e confirme a escolha.
+4. Aguarde o sistema realizar a leitura e a verificação dos dados.
 
-Alguns erros de escrita podem ser corrigidos automaticamente.
+O arquivo original não deve ser alterado pelo sistema durante o tratamento. Mesmo assim, recomenda-se manter uma cópia de segurança da planilha antes de iniciar o processo.
 
-### Sexo
+## 7. Verificação dos dados
 
-Exemplos de valores reconhecidos e padronizados:
+Após o carregamento, o sistema verifica os dados da planilha antes de executar a distribuição. São verificados, entre outros casos:
 
-| Valor informado | Valor tratado |
-|---|---|
-| `feminino` | `F` |
-| `mulher` | `F` |
-| `masculino` | `M` |
-| `homem` | `M` |
-
-### Disponibilidade
-
-Exemplos de valores reconhecidos e padronizados:
-
-| Valor informado | Valor tratado |
-|---|---|
-| `manha` | `Manhã` |
-| `manhã` | `Manhã` |
-| `matutino` | `Manhã` |
-| `tarde` | `Tarde` |
-| `vespertino` | `Tarde` |
-
-Valores como `I`, `Integral` ou `integral` não são convertidos automaticamente para um turno. Eles permanecem como inconsistências e o registro é descartado do dataframe enviado à modelagem, pois escolher um turno nesse momento seria uma decisão da modelagem, não do tratamento.
-
-Todas as correções automáticas são registradas no dataframe de inconsistências.
-
-## 7. Inconsistências
-
-Quando um registro não pode ser corrigido com segurança, ele não é enviado à modelagem. A ocorrência é registrada no dataframe de inconsistências.
-
-Os casos verificados incluem:
-
-- nome ausente;
-- sexo ausente;
-- disponibilidade ausente;
-- sexo inválido;
-- disponibilidade inválida;
-- cabeçalho identificado ou corrigido pela posição;
+- ausência de nome;
+- ausência de sexo;
+- ausência de disponibilidade;
+- valores inválidos em `Sexo`;
+- valores inválidos em `Disponibilidade`;
+- nomes incorretos das colunas principais;
 - alunos duplicados no mesmo turno.
 
-Um aluno duplicado no mesmo turno é informado como inconsistência, mas os registros não são automaticamente descartados. Essa decisão pode depender das regras do problema e deve ser avaliada pela equipe responsável pela modelagem.
+## 8. Correções automáticas
 
-As inconsistências possuem informações como:
+Alguns erros simples de escrita podem ser corrigidos automaticamente:
 
-| Campo | Descrição |
-|---|---|
-| `Linha` | Número da linha correspondente à planilha original |
-| `Coluna` | Coluna relacionada ao problema |
-| `Tipo de erro` | Categoria da inconsistência |
-| `Detalhes` | Descrição do valor encontrado ou da correção realizada |
+- `feminino` pode ser convertido para `F`;
+- `masculino` pode ser convertido para `M`;
+- `manha` pode ser convertido para `Manhã`;
+- `matutino` pode ser convertido para `Manhã`;
+- `vespertino` pode ser convertido para `Tarde`.
 
-O número da linha preserva a posição original na planilha, inclusive quando outras linhas anteriores foram descartadas.
+As correções realizadas são informadas ao usuário e ficam registradas nas inconsistências para conferência.
 
-## 8. Retorno do tratamento
+Valores como `I`, `Integral` ou `integral` não são convertidos automaticamente para um turno. Como não é possível escolher o turno correto apenas com essa informação, o registro é informado como inconsistente e não segue para a distribuição.
 
-O processamento retorna um objeto com as informações do resultado, incluindo:
+## 9. Alunos duplicados
 
-- status do processamento;
-- mensagem geral;
-- lista de erros iniciais;
-- lista de correções automáticas;
-- dataframe de alunos válidos;
-- dataframe de turmas;
-- dataframe de inconsistências.
+Se dois alunos possuem o mesmo nome e a mesma disponibilidade, o sistema informa a duplicidade.
 
-O dataframe de alunos válidos deve ser encaminhado para a modelagem. O dataframe de inconsistências pode ser exibido ao usuário para conferência ou disponibilizado para download.
+Essa situação não significa automaticamente que os registros serão excluídos. A ocorrência é registrada para que possa ser avaliada pela equipe responsável pelo ensalamento.
 
-O arquivo Excel original não é sobrescrito nem modificado durante o tratamento.
+## 10. Resultado da validação
 
-## 9. Capacidade das turmas
-
-O tratamento não bloqueia a execução quando a quantidade de alunos é maior que a quantidade de vagas disponíveis.
-
-Essa situação deve ser tratada pelo modelo matemático, que pode identificar a inviabilidade, aplicar as regras definidas pelo problema ou informar que não existe solução dentro das restrições fornecidas.
-
-Da mesma forma, o tratamento não decide que uma turma deve ser utilizada antes de outra. Regras como minimizar a quantidade de turmas utilizadas devem ser representadas na função objetivo ou nas restrições do modelo.
-
-## 10. Arquivos de debug
-
-Para facilitar a conferência durante o desenvolvimento, o tratamento possui uma opção de salvamento dos dataframes em CSV.
-
-Quando o salvamento de debug está habilitado, os arquivos são gerados em:
-
-```text
-projeto/dados/debug/alunos_tratados.csv
-projeto/dados/debug/inconsistencias.csv
-```
-
-Esses arquivos são auxiliares para conferência e não substituem o arquivo Excel original.
-
-Quando não for mais necessário gerar esses arquivos, a opção de debug pode ser desabilitada no arquivo `projeto/etl/tratamento.py`.
-
-## 11. Mensagens exibidas no terminal
-
-Durante a execução, o sistema pode exibir mensagens como:
-
-```text
-DataFrame de alunos válidos: 120 linha(s)
-DataFrame de inconsistências: 7 linha(s)
-```
-
-Também podem ser exibidos:
-
-- erros encontrados na leitura ou validação;
-- correções automáticas realizadas;
-- alunos duplicados no mesmo turno;
-- confirmação de que os dados estão prontos para a modelagem.
-
-Uma mensagem de sucesso significa que o tratamento foi concluído. Ela não significa necessariamente que o problema de ensalamento possui solução, pois essa verificação pertence à etapa de modelagem.
-
-## 12. Organização do projeto
-
-As principais pastas e arquivos são:
-
-```text
-projeto/
-├── app.py                    # Ponto de entrada da aplicação
-├── backend/                  # Comunicação e serviços do backend
-├── etl/
-│   └── tratamento.py         # Leitura, validação e preparação dos dados
-├── modelagem/                # Restrições, objetivo e otimização
-├── frontend/                 # Interface visual da aplicação
-├── dados/                    # Instâncias e arquivos auxiliares
-├── requirements.txt          # Dependências Python
-└── dist/                     # Versão compilada, quando gerada
-```
-
-## 13. Fluxo recomendado para o usuário
-
-1. Prepare a planilha de acordo com o formato descrito neste manual.
-2. Abra a aplicação.
-3. Carregue o arquivo `.xlsx`.
-4. Aguarde a validação dos dados.
-5. Confira as mensagens e as inconsistências identificadas.
-6. Corrija a planilha original se necessário e carregue-a novamente.
-7. Prossiga com os registros válidos para a etapa de modelagem.
-8. Analise o resultado do ensalamento.
-
-## 14. Observações para desenvolvedores
-
-O tratamento deve permanecer responsável pela qualidade e pela padronização dos dados. A modelagem deve permanecer responsável pelas decisões de alocação e otimização.
-
-Essa separação evita que regras de distribuição sejam implementadas como decisões fixas no tratamento. Assim, alterações nas regras do ensalamento podem ser feitas no modelo matemático sem modificar a etapa de preparação dos dados.
-
-Antes da entrega final, recomenda-se testar as quatro instâncias disponíveis em `documentacao/instancias` e verificar:
+Ao final da verificação, o sistema informa:
 
 - a quantidade de alunos válidos;
-- a quantidade de inconsistências;
+- a quantidade de inconsistências encontradas;
 - as correções automáticas realizadas;
-- as linhas originais indicadas nos erros;
-- o comportamento da modelagem quando a capacidade é insuficiente.
+- os erros que não puderam ser corrigidos;
+- se os dados estão prontos para a etapa de distribuição.
+
+Quando houver inconsistências que impeçam o aproveitamento de um registro, esse registro não será enviado para a modelagem. Os demais alunos válidos poderão continuar no processo, conforme as regras da aplicação.
+
+## 11. Como agir quando houver erros
+
+Quando o sistema informar erros:
+
+1. Leia a mensagem exibida.
+2. Confira a linha e a coluna indicadas.
+3. Abra uma cópia da planilha original.
+4. Corrija os dados apontados.
+5. Salve a planilha.
+6. Carregue o arquivo corrigido novamente no sistema.
+
+Exemplos de correções comuns:
+
+- preencher um nome que esteja vazio;
+- trocar um valor diferente de `M` ou `F` por um valor válido;
+- trocar uma disponibilidade inválida por `Manhã` ou `Tarde`;
+- verificar se o cabeçalho da coluna foi colocado na posição correta.
+
+## 12. Execução do ensalamento
+
+Quando a validação for concluída e os dados estiverem prontos, avance para a etapa de distribuição dos alunos.
+
+O sistema utilizará os alunos válidos e as informações das turmas para executar o ensalamento conforme as regras do modelo matemático.
+
+O tratamento dos dados não escolhe manualmente uma turma para cada aluno. Ele apenas prepara as informações e informa os problemas encontrados. A decisão final de distribuição é realizada pela etapa de modelagem.
+
+## 13. Capacidade das turmas
+
+Se houver mais alunos do que vagas disponíveis, o tratamento não interrompe automaticamente o processo por esse motivo.
+
+Essa situação deve ser analisada pelo modelo de distribuição. O resultado poderá indicar que existe uma solução, que é necessário utilizar mais turmas ou que não há solução dentro das regras informadas.
+
+## 14. Inconsistências e conferência
+
+As inconsistências podem incluir informações como:
+
+| Informação | Exemplo |
+|---|---|
+| Linha | Linha 12 da planilha original |
+| Coluna | `Nome` |
+| Tipo de erro | Valor ausente |
+| Detalhes | Nome não informado |
+
+As linhas indicadas correspondem à posição original na planilha, mesmo quando outras linhas também foram descartadas.
+
+## 15. Mensagens de sucesso
+
+A mensagem de que os dados estão prontos para a modelagem significa que a etapa de tratamento foi concluída.
+
+Isso não garante que o ensalamento terá uma solução. A existência de uma solução depende das regras, das restrições e das vagas disponíveis analisadas pelo modelo matemático.
+
+## 16. Problemas comuns
+
+### O arquivo não abre
+
+Verifique se:
+
+- o arquivo é realmente um `.xlsx`;
+- a planilha não está corrompida;
+- o arquivo não está aberto em outro programa;
+- foi utilizado o executável correto fornecido pela equipe.
+
+### A aba de alunos não foi encontrada
+
+Confira se a planilha contém uma aba chamada `Alunos`.
+
+### A aba de turmas não foi encontrada
+
+Confira se a planilha contém uma aba chamada `Turmas`.
+
+### Muitos registros foram considerados inconsistentes
+
+Confira os nomes das colunas, os valores de sexo e os turnos informados. Utilize `M`, `F`, `Manhã` e `Tarde` sempre que possível.
+
+### O resultado não possui todos os alunos
+
+Verifique a lista de inconsistências. Alunos com dados ausentes ou inválidos podem ter sido removidos do conjunto enviado para a modelagem.
+
+## 17. Recomendações
+
+- Mantenha uma cópia original da planilha.
+- Não altere a estrutura das abas sem orientação.
+- Confira as inconsistências antes de prosseguir.
+- Corrija os dados na planilha e carregue-a novamente quando necessário.
+- Não feche o programa enquanto o resultado estiver sendo processado.
+- Guarde o arquivo de resultado gerado pelo sistema.
+
+## 18. Suporte
+
+Em caso de erro que não esteja descrito neste manual, envie à equipe responsável:
+
+- a planilha utilizada;
+- a mensagem exibida pelo sistema;
+- a etapa em que o erro ocorreu;
+- uma captura de tela, se possível.
+
+Não envie senhas ou informações que não sejam necessárias para a análise do problema.
