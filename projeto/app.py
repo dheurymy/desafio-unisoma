@@ -4,7 +4,7 @@ from backend.api import Api
 api = Api()
 
 window = webview.create_window(
-    "ABC Aprendiz",
+    "Gerador de Salas - ABC Aprendiz",
     "frontend/index.html",
     js_api=api
 )

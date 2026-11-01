@@ -48,8 +48,15 @@ body {
     width: auto;
 }
 
+.header-texto {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+}
+
 .header-texto h1 {
-    margin: 0;
+    
     font-size: 1.35rem;
     color: var(--azul);
 }
@@ -300,4 +307,29 @@ th {
     .passo[data-estado="rodando"] .passo-num {
         animation: none;
     }
+}
+
+/* Opção do passo 2 */
+
+.opcao-check {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin-top: 10px;
+    font-size: .88rem;
+    cursor: pointer;
+}
+
+.opcao-check input {
+    margin-top: 3px;
+    width: 16px;
+    height: 16px;
+    accent-color: var(--azul);
+    cursor: pointer;
+}
+
+.opcao-check small {
+    display: block;
+    color: var(--texto-suave);
+    font-size: .8rem;
 }
